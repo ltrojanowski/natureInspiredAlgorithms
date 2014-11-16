@@ -1,5 +1,5 @@
 library("random")
-library("foreach")
+#library("foreach")
 
 testfunction <- function()
 {
@@ -23,6 +23,15 @@ random_bitstring <- function(num_bits)
   random_bitstring <- randomNumbers(num_bits, min = 0, max = 1, col = num_bits)  #not correct, need to define size as vec and join.
   return(paste(random_bitstring, collapse = ''))
 }
+
+binary_tournament <- function(pop){
+  ij <- sample(1:length(pop), 2, raplace = F)
+  i = ij[1]
+  j = ij[2]
+  (pop[i])
+}
+
+
 
 point_mutation <- function(bitstring)
 {
@@ -71,3 +80,17 @@ reproduce <- function(selected, pop_size, p_cross, p_mutation){
   return children
 }
 
+
+search <- function(max_genes, num_bits, pop_size, p_crossover, p_mutation){
+  bitstrings <- list()
+  for (index in 1:pop_size){
+    bitstrings[index] <- random_bitstring(num_bits)
+  }
+  fitness <- array()
+  for (index in seq_along(pop_size)){
+    fitness[index] <- onemax(bitstring[index])
+  }
+  population <- cbind(population, fitness)
+  
+  
+}
