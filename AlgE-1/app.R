@@ -1,5 +1,5 @@
 library("random")
-#library("foreach")
+library("ggplot2")
 
 onemax <- function(bitstring){
   sum(bitstring)
@@ -78,6 +78,7 @@ search <- function(max_genes, num_bits, pop_size, p_crossover, p_mutation){
   #sorted_indices <- vector(length=pop_size)
   sorted_indices <- unname(unlist(sort(fitness, index.return = TRUE)['ix']))
   best <- fitness[sorted_indices[1]]
+  best_vector <- vector(length=max_genes)
   best_bitstring <- population[sorted_indices[1]]
   cat('\ninitial best: ', best)
   selected <- matrix(ncol=pop_size, nrow=num_bits)
@@ -93,14 +94,15 @@ search <- function(max_genes, num_bits, pop_size, p_crossover, p_mutation){
     if (fitness[sorted_indices[1]] >= best){
       best <- fitness[sorted_indices[1]]
       population <- children
-      cat('\ngen: ', gen, 'best: ', best, 'bitstring: ', population[,sorted_indices[1]])
+      #cat('\ngen: ', gen, 'best: ', best, 'bitstring: ', population[,sorted_indices[1]])
     }
     #else {
     #  cat('\nbest: ', best, 'bitstring: ', selected[,1])
     #}
+    best_vector[gen] <- best;
     if (best == num_bits) break;
   }
-  best
+  return(list(best=best, best_vector=best_vector))
 }
 
 test <- function() {
@@ -159,8 +161,19 @@ run <- function(){
   p_crossover <- 0.98
   p_mutation <- 1.0/num_bits
   #execute the algorithm
-  best <- search(max_genes, num_bits, pop_size, p_crossover, p_mutation)
-  cat('\n Done! Solution: ', best)
+  runs <-10
+  mean_run <- matrix(ncol=runs, nrow=max_genes)
+  mean_best <- c(length = runs)
+  for(run in 1:runs){
+    solution <- search(max_genes, num_bits, pop_size, p_crossover, p_mutation)
+    mean_run[,run] <- solution$best_vector
+    mean_best[run] <- solution$best
+    cat('\n Run No. ', run, '| Solution: ', solution$best)
+  }
+  mean_run <- apply(mean_run, 1, mean)
+  mean_best <- mean(mean_best)
+  cat('\n Mean solution', mean_best)
+  qplot(x = seq_along(mean_run), y = mean_run, xlab="generation", ylab="score", geom="line")
 }
 
 run();
