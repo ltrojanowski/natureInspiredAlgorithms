@@ -2,16 +2,22 @@
 #library('ggplot2')
 
 
-objective_function <- function(matrix) { #matrix stores points in columns
+objective_function <- function(mat) { #matrix stores points in columns
+  cat('\nis matrix a matrix',is.matrix(mat))
   basin_function <- function(vec){
-    if(vec == 0) {
+    if(all(vec == 0)) {
       return(0)
     } else{
-      exp(-2.0/vec^2)
+      return(sum(exp(-2.0/vec^2)))
     }
-    sum(sapply(vec, basin_function))
+    #sum(sapply(vec, basin_function))
   }
-  return(apply(matrix, 2, basin_function))
+  return(apply(mat, 2, basin_function))
+}
+
+objective_function_wrapper <- function(x_vec, y_vec) {
+  vec <-rbind(x_vec,y_vec)
+  return(objective_function(vec))
 }
 
 random_in_bounds <- function(minmax){
@@ -35,21 +41,32 @@ create_particle <- function(search_space, vel_space){
 get_global_best <- function(population, current_best=NULL){
   
 }
-#function to test all component while writing
+#function to test all components while writing
 test <-function(){
-  cat('\nplot objective function')
-  vec <- seq(from=-5, to=5, by = 0.1)
-  plot(vec, objective_function(vec), geom='line')
-  cat('\ntest of random_vector')
-  test_matrix <- matrix(1:20, ncol = 10, nrow = 2)
-  rand_vec <- random_vector(test_matrix)
-  cat('\nrand_vec:', rand_vec)
-  cat('\nlength:', length(rand_vec))
-  cat('\ntest create_particle')
-  test_matrix <-matrix(1:10, ncol = 5, nrow = 2)
-  ex_particle <- create_particle(test_matrix, test_matrix)
-  cat('\nex_particle:\n')
-  print(ex_particle)
+  vec<-seq(from=-2, to=1.9, by=0.1)
+  cat('\nlength', length(vec))
+  mat<-rbind(vec,vec)
+  cat('\nmatrix: \n', mat)
+  cat('\n is matrix: ', is.matrix(mat))
+  cat('\ndim of matrix: ', dim(mat))
+  objective_function(mat)
+  #plot(vec, objective_function(mat))
+  x <- y <-seq(from=-1, to =1,  by=0.1)
+  cat('\nlength of x:', length(x))
+  z <- outer(x,y, objective_function_wrapper)
+  cat('\nz matrix:', z)
+  cat('\ndim of z:', dim(z))
+  contour(z)
+  #cat('\ntest of random_vector')
+  #test_matrix <- matrix(1:20, ncol = 10, nrow = 2)
+  #rand_vec <- random_vector(test_matrix)
+  #cat('\nrand_vec:', rand_vec)
+  #cat('\nlength:', length(rand_vec))
+  #cat('\ntest create_particle')
+  #test_matrix <-matrix(1:10, ncol = 5, nrow = 2)
+  #ex_particle <- create_particle(test_matrix, test_matrix)
+  #cat('\nex_particle:\n')
+  #print(ex_particle)
 }
 
 test();
