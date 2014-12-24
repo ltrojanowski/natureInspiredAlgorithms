@@ -1,23 +1,23 @@
 #PSO - Particle Swarm Optamisation
-#library('ggplot2')
+library('ggplot2')
 library('random')
 
-objective_function <- function(mat) { #matrix stores points in columns
-  cat('\nis objective_function argument a matrix',is.matrix(mat))
+objective_function <- function(vec) { #matrix stores points in columns
+  #cat('\nis objective_function argument a matrix',is.matrix(mat))
   basin_function <- function(vec){
     if(all(vec == 0)) {
       return(0)
     } else{
-      return(sum(exp(-2.0/vec^2)))
+      return(sum(exp(-2.0/vec^2)+sin(vec*pi*2)))
     }
-    #sum(sapply(vec, basin_function))
   }
-  return(apply(mat, 2, basin_function))
+  #return(apply(mat, 2, basin_function))
+  return(basin_function(vec))
 }
 
 objective_function_wrapper <- function(x_vec, y_vec) {
   vec <-rbind(x_vec,y_vec)
-  return(objective_function(vec))
+  return(apply(vec,2, objective_function))
 }
 
 random_in_bounds <- function(minmax){
@@ -31,7 +31,7 @@ random_vector <- function(minmax){
 create_particle <- function(search_space, vel_space){
   particle <-list(position=NA, cost=NA, b_position=NA, b_cost=NA, velocity=NA)
   particle$position = random_vector(search_space)
-  particle$cost = objective_function(as.matrix(particle$position))
+  particle$cost = objective_function(particle$position)
   particle$b_position = particle$position
   particle$b_cost = particle$cost
   particle$velocity = random_vector(vel_space)
@@ -61,9 +61,44 @@ update_velocity <- function(particle, gbest, max_v, c1, c2){
 
 update_position <- function(part, bounds){
   part$position <- part$position + part$velocity
-  part <- ifelse(part$position > bounds[2, ], bounds[2, ]-abs(part$position-bounds[2, ]); part$velocity <- -1*part$velocity; part, part)
-  part <- ifelse(part$position < bounds[1, ], bounds[1, ]+abs(part$position-bounds[1, ]); part$velocity <- -1*part$velocity; part, part)
+  part$position <- ifelse(part$position > bounds[2, ], bounds[2, ]-abs(part$position-bounds[2, ]), part$position)
+  part$velocity <- ifelse(part$position > bounds[2, ], -1*part$velocity, part$velocity)
+  part$position <- ifelse(part$position < bounds[1, ], bounds[1, ]+abs(part$position-bounds[1, ]), part$position)
+  part$velocity <- ifelse(part$position < bounds[1, ], -1*part$velocity, part$velocity)
+  return(part)
 }
+
+update_best_position <- function(particle){
+  if (particle$cost > particle$b_cost) return(particle)
+  particle$b_cost <- particle$cost
+  particle$b_position <- particle$position
+  particle
+}
+
+update_cost <- function(particle){
+  particle$cost <- objective_function(particle$position)
+  particle
+}
+
+search <- function(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2){
+  pop <- list()
+  best_vector <- vector(length=max_gens)
+  for(index in 1:pop_size){
+    pop[[index]] <- create_particle(search_space, vel_space)
+  }
+  gbest <- get_global_best(pop)
+  for(index in 1:max_gens){
+    pop <- lapply(pop, update_velocity, gbest, max_vel, c1, c2)
+    pop <- lapply(pop, update_position, search_space)
+    pop <- lapply(pop, update_cost)
+    pop <- lapply(pop, update_best_position)
+    gbest <- get_global_best(pop, gbest)
+    best_vector[index] <- gbest$cost
+    cat('\ngen:', index, 'fitness =', gbest$cost)
+  }
+  return(list(best=gbest, best_vec=best_vector))
+}
+
 #function to test all components while writing
 test <-function(){
   vec<-seq(from=-2, to=1.9, by=0.1)
@@ -91,22 +126,50 @@ test <-function(){
   cat('\nex_particle:\n')
   print(ex_particle)
   cat('\ntest of get_best_particle')
-  two_dim_test_matrix <- matrix(1:4,ncol = 2, nrow = 2)
+  two_dim_test_matrix <- matrix(c(-3,3),ncol = 2, nrow = 2)
   test_population <- list()
   for (i in 1:5){
-    test_population[[i]] <- create_particle(two_dim_test_matrix, two_dim_test_matrix)
+    test_population[[i]] <- create_particle(two_dim_test_matrix, 0.5*two_dim_test_matrix)
   }
   cat('\n test population:\n')
   print(test_population)
   cat('test get_global_best:\n')
   test_best_particle <- get_global_best(test_population)
   print(test_best_particle)
-  cat('\ntest update_velocity')
+  cat('\ntest update_velocity\n')
   test_changed_velocity <- update_velocity(test_population[[1]], test_best_particle, 2, 2, 2)
   cat('\noryginal particle:\n')
   print(test_population[[1]])
   cat('\nchanged particle:\n')
   print(test_changed_velocity)
+  cat('\ntest update_position\n')
+  test_changed_position <- update_position(test_changed_velocity, 0.4*two_dim_test_matrix)
+  print(test_changed_position)
+  cat('\ntest update_best_position\n')
+  #test_best_particle_updated <- update_best_position(particle)
+  
 }
 
-test();
+
+run <- function(){
+  #plot
+  x <- y <-seq(from=-5, to =5,  by=0.1)
+  z <- outer(x,y, objective_function_wrapper)
+  contour(z)
+  #algorithm
+  search_space <- matrix(c(-5,5), ncol=2, nrow=2)
+  vel_space <- matrix(c(-1,1), ncol=2, nrow=2)
+  max_gens <- 100
+  pop_size <- 50
+  max_vel <- 100.0
+  c1 <- 2
+  c2 <- 2
+  result <- search(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2)
+  cat('\nhurra! gotowe\n', 'Best solution:\n')
+  print(result$best)
+  #cat('\nclass of result$best_vec', class(result$best_vec))
+  qplot(x=seq_along(reslut$best_vec), result$best_vec, xlab="iteration", ylab="best result")
+}
+
+#test();
+run();
