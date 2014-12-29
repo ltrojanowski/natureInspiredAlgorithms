@@ -77,17 +77,24 @@ search <- function(max_gens, search_space, num_bees, num_sites, elite_sites,
                    patch_size, e_bees, o_bees){
   best <- NULL
   pop <- replicate(num_bees, create_random_bee(search_space), simplify=FALSE)
-  for(index in 1:max_gens){
+  for(iteration in 1:max_gens){
     pop <- lapply(pop, evaluate_bee)
     pop <- sort_bees(pop)
-    best <- if (is.null(best)||pop[[1]]$fitness < best$fitness) pop[[1]]
+    #cat('\nthe best bee is:')
+    #print(pop[[1]])
+    best <- if (is.null(best)||pop[[1]]$fitness < best$fitness) pop[[1]] else best
     next_gen <- list()
     for(index in seq_along(pop)){
       parent <- pop[[index]]
-      neigh_size <- if(i<elite_sites) {e_bees} else {o_bees}
-      next_gen <- search_neigh(parent, neigh_size, patch_size, search_space)
+      neigh_size <- if(index<elite_sites) {e_bees} else {o_bees}
+      next_gen[[index]] <- search_neigh(parent, neigh_size, patch_size, search_space)
     }
+    scouts <- create_scout_bees(search_space, (num_bees-num_sites))
+    pop <- c(next_gen, scouts)
+    patch_size <- patch_size * 0.92
+    cat('\nit no.', iteration, 'patch size:', patch_size, 'best fitness:', best$fitness)
   }
+  best
 }
 
 #test function to test elements alongside writing
@@ -113,9 +120,23 @@ test <- function(){
   cat('\ntest create_scout_bees:\n')
   test_scout_bees <- create_scout_bees(test_search_space, 5)
   print(test_scout_bees)
-  
+}
+
+run <- function(){
+  search_space <- matrix(c(-5, 5), ncol=2, nrow=2)
+  max_gens <- 50
+  num_bees <- 45
+  num_sites <- 3
+  elite_sites <- 1
+  patch_size <- 3.0
+  e_bees <- 7
+  o_bees <- 2
+  best <- search(max_gens, search_space, num_bees, num_sites, elite_sites,
+                 patch_size, e_bees, o_bees)
+  cat('\nhurra! gotowe! najlepszy wynik to:\n')
+  print(best)
 }
 
 
-
-test()
+#test()
+run()
