@@ -168,7 +168,7 @@ run <- function(){
   cat('\nhurra! gotowe\n', 'Best solution:\n')
   print(result$best)
   #cat('\nclass of result$best_vec', class(result$best_vec))
-  qplot(x=seq_along(reslut$best_vec), result$best_vec, xlab="iteration", ylab="best result")
+  print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteration", ylab="best result", geom="line"))
 }
 
 #test();

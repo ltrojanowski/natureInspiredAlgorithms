@@ -1,5 +1,6 @@
+library("ggplot2")
 
-TSP_matrix <- function(filename, precision=0){
+TSP_matrix <- function(filename){
   csv <- read.csv(filename, header=TRUE,sep=" ")
   node <- csv[["NODE"]]
   tsp_matrix <- matrix(nrow=2, ncol=length(node))
@@ -62,12 +63,13 @@ select_next_city <- function(choices){
 }
 
 stepwise_const <- function(cities, phero, c_heur, c_hist){
-  perm <- sample(1:length(cities),1)
+  perm <- sample(1:length(cities[1, ]),1)
   index <- 2
-  while(length(perm)!=length(cities)) {
+  while(length(perm)!=length(cities[1, ])) {
     choices <- calculate_choices(cities, perm[length(perm)], perm, phero, c_heur, c_hist)
     next_city <- select_next_city(choices)
     perm[index] <- next_city
+    index <- index + 1
   }
   perm
 }
@@ -77,20 +79,45 @@ decay_pheromone <- function(pheromone, decay_factor){
 }
 
 update_pheromone <- function(pheromone, solutions){
-  update <- function(other){
-    
+  mat <- pheromone
+  for(other in solutions){
+    for(index in seq_along(other$vector)){
+      x <- other$vector[index]
+      y <- if(index == length(other$vector)) {other$vector[1]} else {other$vector[index+1]}
+      mat[x, y] <- pheromone[x, y] + (1.0/other$cost)
+      mat[y, x] <- pheromone[x, y] + (1.0/other$cost)
+    }
   }
-  lapply(solutions, update)
+  mat
 }
 
 search <- function(cities, max_it,num_ants, decay_factor, c_heur, c_hist){
-  
+  best <- list()
+  best$vector <- random_permutation(cities)
+  best$cost <- cost(best$vector, cities)
+  pheromone <- initialise_pheromone_matrix(length(cities[1, ]), cities)
+  best_vec <- vector(length=max_it)
+  for(iter in 1:max_it){
+    solutions <- list()
+    for(ant in 1:num_ants){
+      candidate <- list()
+      candidate$vector <- stepwise_const(cities, pheromone, c_heur, c_hist)
+      candidate$cost <- cost(candidate$vector, cities)
+      best <- if(candidate$cost < best$cost) candidate else best
+      solutions[[ant]] <- candidate
+    }
+    pheromone <- decay_pheromone(pheromone, decay_factor)
+    pheromone <- update_pheromone(pheromone, solutions)
+    cat('\niteration no.', iter, 'best:', best$cost)
+    best_vec[iter] <- best$cost
+  }
+  return(list(cost_vector=best_vec, best=best))
 }
 
 #test function to chceck components while writing
 test <- function(){
   cat('\ntest of load data:\n')
-  berlin52 <- TSP_matrix("berlin52.txt", 0)
+  berlin52 <- TSP_matrix("berlin52.txt")
   cat('class of berlin52 is', class(berlin52), '\n')
   print(berlin52)
   cat('\ntest of euc_2d\n')
@@ -121,6 +148,35 @@ test <- function(){
   cat('\ntest stepwise_const:\n')
   test_step <- stepwise_const(test_cities, test_pher_matrix, 2.5, 0.1)
   print(test_step)
+  cat('\ntest of decay pheromone\n')
+  test_new_pher_mat <- decay_pheromone(test_pher_matrix, 0.5)
+  print(test_new_pher_mat)
+  cat('\ntest update pheromone\n')
+  test_solution <- list()
+  test_solution$vector <- test_step
+  test_solution$cost <- cost(test_solution$vector, test_cities)
+  test_solutions <- list(test_solution, test_solution)
+  updated_pher_mat <- update_pheromone(test_new_pher_mat, test_solutions)
+  cat('pher mat:\n')
+  print(updated_pher_mat)
+  cat('\nqplot()')
+  print(qplot(x=1:5, y=1:5))
 }
 
-test()
+run <- function(){
+  berlin52 <- TSP_matrix("berlin52.txt")
+  max_it = 5
+  num_ants = 30#ength(berlin52[1,])
+  decay_factor = 0.6
+  c_heur = 2.5
+  c_hist = 1.0
+  ret <- search(berlin52, max_it, num_ants, decay_factor, c_heur, c_hist)
+  cat('\nHurra! Gotowe! najlepsze rozwiazanie:\n')
+  print(ret$best)
+  print(ret$cost_vector)
+  print(qplot(x=seq_along(ret$cost_vector),y=ret$cost_vector, xlab="iteration", ylab="best result", geom="line"))
+}
+
+#test()
+
+run()
