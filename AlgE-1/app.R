@@ -1,5 +1,6 @@
 library("random")
 library("ggplot2")
+library("reshape2")
 
 onemax <- function(bitstring){
   sum(bitstring)
@@ -155,25 +156,46 @@ test <- function() {
 run <- function(){
   #problem configuration
   num_bits <- 64
-  # algorithm configuration
-  max_genes <- 300
+  # algorithm configuration 1
+  max_genes <- 100
   pop_size <- 100
   p_crossover <- 0.98
   p_mutation <- 1.0/num_bits
   #execute the algorithm
-  runs <-10
-  mean_run <- matrix(ncol=runs, nrow=max_genes)
-  mean_best <- c(length = runs)
-  for(run in 1:runs){
-    solution <- search(max_genes, num_bits, pop_size, p_crossover, p_mutation)
-    mean_run[,run] <- solution$best_vector
-    mean_best[run] <- solution$best
-    cat('\n Run No. ', run, '| Solution: ', solution$best)
+  mean_runs <- matrix(ncol=4, nrow=max_genes)
+  for(wrap in 1:4){
+    p_cross <- p_crossover* (0.99)^wrap
+    p_mut <- p_mutation # * (0.99)^wrap
+    runs <-2
+    mean_run <- matrix(ncol=runs, nrow=max_genes)
+    mean_best <- c(length = runs)
+    for(run in 1:runs){
+      solution <- search(max_genes, num_bits, pop_size, p_cross, p_mutation)
+      mean_run[,run] <- solution$best_vector
+      mean_best[run] <- solution$best
+      cat('\n Run No. ', run, '| Solution: ', solution$best)
+    }
+    cat('\n')
+    df <- data.frame(x=seq_along(mean_run[,1]),y=mean_run)
+    df2 <- melt(data= df,id.vars = "x")
+    p1 <- ggplot(data = df2, aes(x=x, y = value, colour = variable, alpha))+geom_line(size=1)+theme(legend.position="none")
+    p1 <- p1 + xlab("iteracja algorytmu") + ylab("najlepszy wynik")
+    print(p1)
+    mean_run <- apply(mean_run, 1, mean)
+    mean_best <- mean(mean_best)
+    cat('\n Mean solution', mean_best)
+    p2 <- qplot(x = seq_along(mean_run), y = mean_run, xlab="iteracja algorytmu", ylab="uœredniony wynik", geom="line")+geom_line(size=1)
+    print(p2)
+    mean_runs[ , wrap] <- mean_run
   }
-  mean_run <- apply(mean_run, 1, mean)
-  mean_best <- mean(mean_best)
-  cat('\n Mean solution', mean_best)
-  qplot(x = seq_along(mean_run), y = mean_run, xlab="generation", ylab="score", geom="line")
+  print(mean_runs)
+  df3 <- data.frame(x=seq_along(mean_runs[, 1]), y=mean_runs)
+  df4 <- melt(data= df3, id.vars = "x")
+  p3 <- ggplot(data = df4, aes(x=x, y = value, color=variable))+
+    geom_line(size=1)
+    
+  p3 <- p3 + xlab("iteracja algorytmu") + ylab("uœredniony wynik")
+  print(p3)
 }
 
 run();
