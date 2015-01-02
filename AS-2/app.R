@@ -30,7 +30,6 @@ random_permutation <- function(cities){
 }
 
 initialise_pheromone_matrix <- function(num_cities, init_pher){
-  #v <- num_cities/naive_score
   return(matrix(init_pher, ncol=num_cities, nrow=num_cities))
 }
 
@@ -68,17 +67,6 @@ greedy_select <- function(choices){
   city[order(prob)[length(prob)]]
 }
 
-select_next_city <- function(choices){
-  sum <- sum(unlist(lapply(choices, "[[", "prob")))
-  if(sum==0) return(choices[[sample(1:length(choices),1)]]$city)
-  v <- runif(1, 0.0, 1.0)
-  for(choice in choices){
-    v <- v - choice$prob/sum
-    if (v <= 0.0) return(choice$city)
-  }
-  return(tail(choices, n=1))
-}
-
 stepwise_const <- function(cities, phero, c_heur, c_greed){
   perm <- sample(1:length(cities[1, ]),1)
   index <- 2
@@ -90,23 +78,6 @@ stepwise_const <- function(cities, phero, c_heur, c_greed){
     index <- index + 1
   }
   perm
-}
-
-decay_pheromone <- function(pheromone, decay_factor){
-  apply(pheromone, c(1,2), function(P){(1.0-decay_factor)*P}) 
-}
-
-update_pheromone <- function(pheromone, solutions){
-  mat <- pheromone
-  for(other in solutions){
-    for(index in seq_along(other$vector)){
-      x <- other$vector[index]
-      y <- if(index == length(other$vector)) {other$vector[1]} else {other$vector[index+1]}
-      mat[x, y] <- pheromone[x, y] + (1.0/other$cost)
-      mat[y, x] <- pheromone[x, y] + (1.0/other$cost)
-    }
-  }
-  mat
 }
 
 global_update_pheromone <- function(phero, cand, decay){
@@ -138,8 +109,8 @@ search <- function(cities, max_it, num_ants, decay, c_heur, c_local_phero, c_gre
   init_pheromone <- 1.0 / (length(cities[1, ])*best$cost)
   pheromone <- initialise_pheromone_matrix(length(cities[1, ]), init_pheromone)
   best_vec <- vector(length=max_it)
+  solutions <- list()
   for(iter in 1:max_it){
-    #solutions <- list()
     for(ant in 1:num_ants){
       cand <- list()
       cand$vector <- stepwise_const(cities, pheromone, c_heur, c_greed)
@@ -152,8 +123,9 @@ search <- function(cities, max_it, num_ants, decay, c_heur, c_local_phero, c_gre
     pheromone <- global_update_pheromone(pheromone, best, decay)
     cat('\niteration no.', iter, 'best:', best$cost)
     best_vec[iter] <- best$cost
+    solutions[[iter]] <- best
   }
-  return(list(cost_vector=best_vec, best=best))
+  return(list(cost_vector=best_vec, best=best, solutions=solutions))
 }
 
 #test function to chceck components while writing
@@ -217,7 +189,7 @@ test <- function(){
 run <- function(){
   berlin52 <- TSP_matrix("berlin52.txt")
   max_it = 100
-  num_ants = 10#ength(berlin52[1,])
+  num_ants = 20#length(berlin52[1,])
   decay = 0.1
   c_heur = 2.5
   c_local_phero = 0.1
@@ -226,7 +198,17 @@ run <- function(){
   cat('\nHurra! Gotowe! najlepsze rozwiazanie:\n')
   print(ret$best)
   print(ret$cost_vector)
-  print(qplot(x=seq_along(ret$cost_vector),y=ret$cost_vector, xlab="iteration", ylab="best result", geom="line"))
+  for(i in 1:max_it){
+    if(i == 1 || (ret$solution[[i]]$cost<ret$solution[[i-1]]$cost)){
+      sol<- cbind(berlin52[ , ret$solution[[i]]$vector], berlin52[, ret$solution[[i]]$vector[1]])
+      df <- data.frame(x=sol[1,], y=sol[2,])
+      p1 <- ggplot(data=df, aes(x=x, y=y))+geom_point(size=2)+geom_path()
+      print(i)
+      print(p1)
+    }
+  }
+  #print(ret$solutions)
+  print(qplot(x=seq_along(ret$cost_vector),y=ret$cost_vector, xlab="iteration", ylab="best result", geom="line")+geom_line(size=1))
 }
 
 #test()

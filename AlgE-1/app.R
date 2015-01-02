@@ -94,6 +94,7 @@ search <- function(max_genes, num_bits, pop_size, p_crossover, p_mutation){
     sorted_indices <- unname(unlist(sort(fitness, index.return = TRUE)['ix']))
     if (fitness[sorted_indices[1]] >= best){
       best <- fitness[sorted_indices[1]]
+      #print(best)
       population <- children
       #cat('\ngen: ', gen, 'best: ', best, 'bitstring: ', population[,sorted_indices[1]])
     }
@@ -101,7 +102,7 @@ search <- function(max_genes, num_bits, pop_size, p_crossover, p_mutation){
     #  cat('\nbest: ', best, 'bitstring: ', selected[,1])
     #}
     best_vector[gen] <- best;
-    if (best == num_bits) break;
+    #if (best == num_bits) break;
   }
   return(list(best=best, best_vector=best_vector))
 }
@@ -159,14 +160,14 @@ run <- function(){
   # algorithm configuration 1
   max_genes <- 100
   pop_size <- 100
-  p_crossover <- 0.98
-  p_mutation <- 1.0/num_bits
+  p_crossover <- 1.0 #0.98
+  p_mutation <- 0.0#1.0/num_bits
   #execute the algorithm
-  mean_runs <- matrix(ncol=4, nrow=max_genes)
-  for(wrap in 1:4){
-    p_cross <- p_crossover* (0.99)^wrap
+  mean_runs <- matrix(ncol=5, nrow=max_genes)
+  for(wrap in 1:5){
+    p_cross <- p_crossover* (0.95)^(wrap-1)
     p_mut <- p_mutation # * (0.99)^wrap
-    runs <-2
+    runs <-100
     mean_run <- matrix(ncol=runs, nrow=max_genes)
     mean_best <- c(length = runs)
     for(run in 1:runs){
@@ -188,7 +189,6 @@ run <- function(){
     print(p2)
     mean_runs[ , wrap] <- mean_run
   }
-  print(mean_runs)
   df3 <- data.frame(x=seq_along(mean_runs[, 1]), y=mean_runs)
   df4 <- melt(data= df3, id.vars = "x")
   p3 <- ggplot(data = df4, aes(x=x, y = value, color=variable))+

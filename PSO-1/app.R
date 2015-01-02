@@ -1,6 +1,7 @@
 #PSO - Particle Swarm Optamisation
 library('ggplot2')
 library('random')
+library('reshape2')
 
 objective_function <- function(vec) { #matrix stores points in columns
   #cat('\nis objective_function argument a matrix',is.matrix(mat))
@@ -155,7 +156,15 @@ run <- function(){
   #plot
   x <- y <-seq(from=-5, to =5,  by=0.1)
   z <- outer(x,y, objective_function_wrapper)
-  contour(z)
+  surf3d <- melt(z)
+  names(surf3d) <- c("x", "y", "z")
+  #print(z)
+  print(surf3d)
+  p1 <- ggplot(data=surf3d, aes(x=x, y=y, z=z))
+  p1 <- p1 + geom_tile(aes(fill=z))+stat_contour()
+  print(p1)
+  #print(p1)
+  #contour(z)
   #algorithm
   search_space <- matrix(c(-5,5), ncol=2, nrow=2)
   vel_space <- matrix(c(-1,1), ncol=2, nrow=2)
@@ -168,7 +177,7 @@ run <- function(){
   cat('\nhurra! gotowe\n', 'Best solution:\n')
   print(result$best)
   #cat('\nclass of result$best_vec', class(result$best_vec))
-  print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteration", ylab="best result", geom="line"))
+  print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteration", ylab="best result", geom="line")+geom_line(size=1))
 }
 
 #test();

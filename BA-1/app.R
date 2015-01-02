@@ -77,12 +77,14 @@ search <- function(max_gens, search_space, num_bees, num_sites, elite_sites,
                    patch_size, e_bees, o_bees){
   best <- NULL
   pop <- replicate(num_bees, create_random_bee(search_space), simplify=FALSE)
+  solutions <- list()
+  best_vec <- vector(length=max_gens)
   for(iteration in 1:max_gens){
     pop <- lapply(pop, evaluate_bee)
     pop <- sort_bees(pop)
-    #cat('\nthe best bee is:')
-    #print(pop[[1]])
     best <- if (is.null(best)||pop[[1]]$fitness < best$fitness) pop[[1]] else best
+    solutions[[iteration]] <- best
+    best_vec[iteration] <- best$fitness
     next_gen <- list()
     for(index in seq_along(pop)){
       parent <- pop[[index]]
@@ -94,7 +96,7 @@ search <- function(max_gens, search_space, num_bees, num_sites, elite_sites,
     patch_size <- patch_size * 0.92
     cat('\nit no.', iteration, 'patch size:', patch_size, 'best fitness:', best$fitness)
   }
-  best
+  ret <- list(best=best, best_vec=best_vec, solutions=solutions)
 }
 
 #test function to test elements alongside writing
@@ -134,7 +136,11 @@ run <- function(){
   best <- search(max_gens, search_space, num_bees, num_sites, elite_sites,
                  patch_size, e_bees, o_bees)
   cat('\nhurra! gotowe! najlepszy wynik to:\n')
-  print(best)
+  #print(best$solutions)
+  df <- data.frame(x = 1:max_gens, y=best$best_vec)
+  p1 <- ggplot(df, aes(x=x, y=y))+geom_line(size=1)
+  print(p1)
+  print(best$best)
 }
 
 
