@@ -6,11 +6,12 @@ library('reshape2')
 objective_function <- function(vec) { #matrix stores points in columns
   #cat('\nis objective_function argument a matrix',is.matrix(mat))
   basin_function <- function(vec){
-    if(all(vec == 0)) {
-      return(0)
-    } else{
-      return(sum(exp(-2.0/vec^2)+sin(vec*pi*2)))
-    }
+    #if(all(vec == 0)) {
+    #  return(0)
+    #} else{
+    #  return(sum(exp(-2.0/vec^2)+sin(vec*pi*2)))
+    #}
+    sum(vec^2)
   }
   #return(apply(mat, 2, basin_function))
   return(basin_function(vec))
@@ -88,6 +89,8 @@ search <- function(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2)
     pop[[index]] <- create_particle(search_space, vel_space)
   }
   gbest <- get_global_best(pop)
+  solutions <- list()
+  pop_list <- list()
   for(index in 1:max_gens){
     pop <- lapply(pop, update_velocity, gbest, max_vel, c1, c2)
     pop <- lapply(pop, update_position, search_space)
@@ -95,9 +98,13 @@ search <- function(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2)
     pop <- lapply(pop, update_best_position)
     gbest <- get_global_best(pop, gbest)
     best_vector[index] <- gbest$cost
-    cat('\ngen:', index, 'fitness =', gbest$cost)
+    solutions[[index]] <- gbest
+    if(index == 1 || index == max_gens){
+      if(index == 1) pop_list[[1]] <- pop else pop_list[[2]] <- pop
+    }
+    #cat('\ngen:', index, 'fitness =', gbest$cost)
   }
-  return(list(best=gbest, best_vec=best_vector))
+  return(list(best=gbest, best_vec=best_vector, solutions=solutions, pop_list=pop_list))
 }
 
 #function to test all components while writing
@@ -148,7 +155,6 @@ test <-function(){
   print(test_changed_position)
   cat('\ntest update_best_position\n')
   #test_best_particle_updated <- update_best_position(particle)
-  
 }
 
 
@@ -158,26 +164,55 @@ run <- function(){
   z <- outer(x,y, objective_function_wrapper)
   surf3d <- melt(z)
   names(surf3d) <- c("x", "y", "z")
-  #print(z)
-  print(surf3d)
+  #print(surf3d)
+  surf3d$x <- rep(x, ncol(z) ); surf3d$y <- rep(y, each=nrow(z))
   p1 <- ggplot(data=surf3d, aes(x=x, y=y, z=z))
-  p1 <- p1 + geom_tile(aes(fill=z))+stat_contour()
+  p1 <- p1 + geom_tile(aes(fill=z))+scale_fill_gradient(low="black", high="white")+stat_contour()
   print(p1)
+  #print(p1)
   #print(p1)
   #contour(z)
   #algorithm
   search_space <- matrix(c(-5,5), ncol=2, nrow=2)
   vel_space <- matrix(c(-1,1), ncol=2, nrow=2)
   max_gens <- 100
-  pop_size <- 50
-  max_vel <- 100.0
+  pop_size <- 20
+  max_vel <- 0.5#100.0
   c1 <- 2
   c2 <- 2
-  result <- search(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2)
-  cat('\nhurra! gotowe\n', 'Best solution:\n')
-  print(result$best)
+  rep <- 5
+  result_matrix <- matrix(ncol=rep, nrow=max_gens)
+  for(index in 1:rep){
+    result <- search(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2)
+    cat('\nhurra! gotowe\n', 'Best solution:\n')
+    print(result$best)
+    print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteration", ylab="best result", geom="line")+geom_line(size=1))
+    for(i in 1:max_gens){
+      if(i == 1){
+        points <- matrix(result$solution[[1]]$position[1], nrow=2)
+      }
+      if(i != 1 && (result$solution[[i]]$cost<result$solution[[i-1]]$cost)){
+        points<- cbind(points, result$solution[[i]]$position)
+      }
+    }
+    result_matrix[, index] <- result$best_vec
+    df <- data.frame(x=points[1,], y=points[2,], z=2)
+    beginning_pop <- do.call(cbind, lapply(result$pop_list[[1]], '[[', "position"))
+    ending_pop <- do.call(cbind, lapply(result$pop_list[[2]], '[[', "position"))
+    df2 <- data.frame(x=beginning_pop[1,], y=beginning_pop[2,], z=2)
+    df3 <-data.frame(x=ending_pop[1, ], y=ending_pop[2, ], z=2)
+    #print(lapply(result))
+    print(p1 + geom_point(data = df, size=3, color = "magenta")+
+            geom_point(data = df2, size=3, color = "green")+
+            geom_point(data = df3, size=3, color = "red"))
+    #print(p1 + geom_point(data = df2, size=3, color = "green"))
+    #print(p1 + geom_point(data = df3, size=3, color = "red"))
+  }
+  mean_result <- apply(result_matrix, 1, mean)
+  cat('\nhurra! gotowe\n', 'usredniony wynik:\n')
+  print(mean_result[length(mean_result)])
   #cat('\nclass of result$best_vec', class(result$best_vec))
-  print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteration", ylab="best result", geom="line")+geom_line(size=1))
+  print(qplot(x=seq_along(mean_result), result$best_vec, xlab="iteracja algorytmu", ylab="usredniony przebieg", geom="line")+geom_line(size=1))
 }
 
 #test();
