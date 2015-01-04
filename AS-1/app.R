@@ -165,9 +165,9 @@ test <- function(){
 
 run <- function(){
   berlin52 <- TSP_matrix("berlin52.txt")
-  max_it = 50
-  num_ants = 30#ength(berlin52[1,])
-  decay_factor = 0.6
+  max_it = 100
+  num_ants = 50#ength(berlin52[1,])
+  decay_factor = 0.8
   c_heur = 2.5
   c_hist = 1.0
   ret <- search(berlin52, max_it, num_ants, decay_factor, c_heur, c_hist)
