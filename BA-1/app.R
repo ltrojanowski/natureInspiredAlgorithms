@@ -1,3 +1,5 @@
+# bees algorithm
+
 library('reshape2')
 library('ggplot2')
 
@@ -10,7 +12,7 @@ objective_function <- function(vec) { #matrix stores points in columns
       return(sum(exp(-2.0/vec^2)+sin(vec*pi*2)))
     }
   }
-  #return(apply(mat, 2, basin_function))
+  #return(sum(vec^2))
   return(basin_function(vec))
 }
 
@@ -25,6 +27,13 @@ random_in_bounds <- function(minmax){
 
 random_vector <- function(minmax){
   apply(minmax, 2, random_in_bounds)
+}
+
+unpack_bees <- function(list, arg) {
+  unpack <- function(li){
+    
+  }
+  lapply(list, unpack)
 }
 
 create_random_bee <- function(search_space){
@@ -86,8 +95,9 @@ search <- function(max_gens, search_space, num_bees, num_sites, elite_sites,
   neigh_ret <- list()
   for(iteration in 1:max_gens){
     pop <- lapply(pop, evaluate_bee)
+    #print(pop[[1]])
     pop <- sort_bees(pop)
-    best <- if (is.null(best)||pop[[1]]$fitness < best$fitness) pop[[1]] else best
+    if (is.null(best)||pop[[1]]$fitness <= best$fitness) {best <- pop[[1]]}# else {best}
     solutions[[iteration]] <- best
     best_vec[iteration] <- best$fitness
     next_gen <- list()
@@ -96,7 +106,8 @@ search <- function(max_gens, search_space, num_bees, num_sites, elite_sites,
       parent <- pop[[index]]
       neigh_size <- if(index<=elite_sites) {e_bees} else {o_bees}
       neigh_list[[index]] <- search_neigh(parent, neigh_size, patch_size, search_space)
-      next_gen[[index]] <- neigh_list[[1]]
+      #next_gen[[index]] <- neigh_list[[1]]
+      next_gen <- c(neigh_list[[index]],next_gen)
     }
     scouts <- create_scout_bees(search_space, (num_bees-num_sites))
     if(iteration == 1 || iteration == max_gens){
@@ -108,8 +119,9 @@ search <- function(max_gens, search_space, num_bees, num_sites, elite_sites,
         neigh_ret[[2]] <- neigh_list
       }
     }
-    pop <- c(next_gen, scouts)# ciekawa opcja, list(best))
-    patch_size <- patch_size * 0.96
+    #print(next_gen)
+    pop <- c(next_gen, scouts)
+    patch_size <- patch_size * 0.98
     cat('\nit no.', iteration, 'patch size:', patch_size, 'best fitness:', best$fitness)
   }
   ret <- list(best=best, best_vec=best_vec, solutions=solutions, pop_list=pop_list, neigh_list=neigh_ret)
@@ -152,16 +164,16 @@ run <- function(){
   print(p1)
   
   search_space <- matrix(c(-5, 5), ncol=2, nrow=2)
-  max_gens <- 500
-  num_bees <- 50
+  max_gens <- 300
+  num_bees <- 40
   num_sites <- 3
   elite_sites <- 1
   patch_size <- 4.0
-  e_bees <- 15
-  o_bees <- 5
+  e_bees <- 7
+  o_bees <- 2
   best <- search(max_gens, search_space, num_bees, num_sites, elite_sites,
                  patch_size, e_bees, o_bees)
-  cat('\nhurra! gotowe! najlepszy wynik to:\n')
+  #cat('\nhurra! gotowe! najlepszy wynik to:\n')
   #print(best$solutions)
   dfplot <- data.frame(x = 1:max_gens, y=best$best_vec)
   plot <- ggplot(dfplot, aes(x=x, y=y))+geom_line(size=1)
@@ -173,6 +185,7 @@ run <- function(){
   df2 <- data.frame(x=beginning_pop[1,], y=beginning_pop[2,], z=2)
   df3 <-data.frame(x=ending_pop[1, ], y=ending_pop[2, ], z=2)
   df4 <- data.frame(x=beginning_neigh[1, ], y=beginning_neigh[2, ], z=2)
+  #print(ending_neigh)
   df5 <- data.frame(x=ending_neigh[1, ], y=ending_neigh[2, ], z=2)
   print(p1 + #geom_point(data = df, size=3, color = "magenta")+
           geom_point(data = df2, size=3, color = "green")+
