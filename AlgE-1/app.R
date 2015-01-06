@@ -1,3 +1,5 @@
+# genetic algorithm
+
 library("random")
 library("ggplot2")
 library("reshape2")
@@ -81,7 +83,7 @@ search <- function(max_genes, num_bits, pop_size, p_crossover, p_mutation){
   best <- fitness[sorted_indices[1]]
   best_vector <- vector(length=max_genes)
   best_bitstring <- population[sorted_indices[1]]
-  cat('\ninitial best: ', best)
+  #cat('\ninitial best: ', best)
   selected <- matrix(ncol=pop_size, nrow=num_bits)
   for(gen in 1:max_genes){
     for(index in 1:pop_size){
@@ -158,23 +160,24 @@ run <- function(){
   #problem configuration
   num_bits <- 64
   # algorithm configuration 1
-  max_genes <- 100
+  max_genes <- 200
   pop_size <- 100
-  p_crossover <- 1.0 #0.98
-  p_mutation <- 0.0#1.0/num_bits
+  p_crossover <- 0.0
+  p_mutation <- 1.0#(1.0/num_bits)/16
   #execute the algorithm
-  mean_runs <- matrix(ncol=5, nrow=max_genes)
-  for(wrap in 1:5){
-    p_cross <- p_crossover* (0.95)^(wrap-1)
-    p_mut <- p_mutation # * (0.99)^wrap
+  num_of_exp <- 8
+  mean_runs <- matrix(ncol=num_of_exp, nrow=max_genes)
+  for(wrap in 1:num_of_exp){
+    p_cross <- p_crossover #* (0.95)^(wrap-1)
+    p_mut <- p_mutation * (0.5)^(wrap-1)
     runs <-100
     mean_run <- matrix(ncol=runs, nrow=max_genes)
     mean_best <- c(length = runs)
     for(run in 1:runs){
-      solution <- search(max_genes, num_bits, pop_size, p_cross, p_mutation)
+      solution <- search(max_genes, num_bits, pop_size, p_cross, p_mut)
       mean_run[,run] <- solution$best_vector
       mean_best[run] <- solution$best
-      cat('\n Run No. ', run, '| Solution: ', solution$best)
+      #  cat('\n Run No. ', run, '| Solution: ', solution$best)
     }
     cat('\n')
     df <- data.frame(x=seq_along(mean_run[,1]),y=mean_run)
@@ -184,7 +187,7 @@ run <- function(){
     print(p1)
     mean_run <- apply(mean_run, 1, mean)
     mean_best <- mean(mean_best)
-    cat('\n Mean solution', mean_best)
+    cat('\nexp',wrap ,'\n Mean solution', mean_best)
     p2 <- qplot(x = seq_along(mean_run), y = mean_run, xlab="iteracja algorytmu", ylab="uœredniony wynik", geom="line")+geom_line(size=1)
     print(p2)
     mean_runs[ , wrap] <- mean_run

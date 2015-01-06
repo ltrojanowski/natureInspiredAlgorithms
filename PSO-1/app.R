@@ -1,4 +1,5 @@
 #PSO - Particle Swarm Optamisation
+
 library('ggplot2')
 library('random')
 library('reshape2')
@@ -6,12 +7,12 @@ library('reshape2')
 objective_function <- function(vec) { #matrix stores points in columns
   #cat('\nis objective_function argument a matrix',is.matrix(mat))
   basin_function <- function(vec){
-    #if(all(vec == 0)) {
-    #  return(0)
-    #} else{
-    #  return(sum(exp(-2.0/vec^2)+sin(vec*pi*2)))
-    #}
-    sum(vec^2)
+    if(all(vec == 0)) {
+      return(0)
+    } else{
+      return(sum(exp(-2.0/vec^2)+sin(vec*pi*2)))
+    }
+    #sum(vec^2)
   }
   #return(apply(mat, 2, basin_function))
   return(basin_function(vec))
@@ -171,7 +172,7 @@ run <- function(){
   #algorithm
   search_space <- matrix(c(-5,5), ncol=2, nrow=2)
   vel_space <- matrix(c(-1,1), ncol=2, nrow=2)
-  max_gens <- 100
+  max_gens <- 200
   pop_size <- 20
   max_vel <- 0.5#100.0
   c1 <- 2
@@ -182,7 +183,7 @@ run <- function(){
     result <- search(max_gens, search_space, vel_space, pop_size, max_vel, c1, c2)
     cat('\nhurra! gotowe\n', 'Best solution:\n')
     print(result$best)
-    print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteration", ylab="best result", geom="line")+geom_line(size=1))
+    print(qplot(x=seq_along(result$best_vec), result$best_vec, xlab="iteracja algorytmu", ylab="najlepszy wynik", geom="line")+geom_line(size=1))
     for(i in 1:max_gens){
       if(i == 1){
         points <- matrix(result$solution[[1]]$position[1], nrow=2)
@@ -208,7 +209,7 @@ run <- function(){
   cat('\nhurra! gotowe\n', 'usredniony wynik:\n')
   print(mean_result[length(mean_result)])
   #cat('\nclass of result$best_vec', class(result$best_vec))
-  print(qplot(x=seq_along(mean_result), result$best_vec, xlab="iteracja algorytmu", ylab="usredniony przebieg", geom="line")+geom_line(size=1))
+  print(qplot(x=seq_along(mean_result), result$best_vec, xlab="iteracja algorytmu", ylab="uœredniony przebieg", geom="line")+geom_line(size=1))
 }
 
 #test();
